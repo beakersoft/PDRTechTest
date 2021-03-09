@@ -103,7 +103,7 @@ namespace PDR.PatientBooking.Service.Tests.DoctorServices.Validation
 
             //assert
             res.PassedValidation.Should().BeFalse();
-            res.Errors.Should().Contain("Email must be populated");
+            res.Errors.Should().Contain("Email must be a valid email address");
         }
 
         [TestCase("user@")]

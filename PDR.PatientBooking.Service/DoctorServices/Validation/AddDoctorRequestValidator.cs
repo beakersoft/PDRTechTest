@@ -2,6 +2,7 @@
 using PDR.PatientBooking.Service.DoctorServices.Requests;
 using PDR.PatientBooking.Service.Validation;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 
 namespace PDR.PatientBooking.Service.DoctorServices.Validation
@@ -30,21 +31,14 @@ namespace PDR.PatientBooking.Service.DoctorServices.Validation
 
         public bool MissingRequiredFields(AddDoctorRequest request, ref PdrValidationResult result)
         {
-            var errors = new List<string>();
+            var validationContext = new ValidationContext(request);
+            var results = new List<ValidationResult>(); 
+            bool isValid = Validator.TryValidateObject(request, validationContext, results, true);
 
-            if (string.IsNullOrEmpty(request.FirstName))
-                errors.Add("FirstName must be populated");
-
-            if (string.IsNullOrEmpty(request.LastName))
-                errors.Add("LastName must be populated");
-
-            if (string.IsNullOrEmpty(request.Email))
-                errors.Add("Email must be populated");
-
-            if (errors.Any())
+            if (!isValid)
             {
                 result.PassedValidation = false;
-                result.Errors.AddRange(errors);
+                result.Errors.AddRange(results.Select(x =>x.ErrorMessage).ToList());
                 return true;
             }
 
