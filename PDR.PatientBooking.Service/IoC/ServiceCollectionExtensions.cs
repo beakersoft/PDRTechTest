@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using PDR.PatientBooking.Service.BookingService;
+using PDR.PatientBooking.Service.BookingService.Validation;
 using PDR.PatientBooking.Service.ClinicServices;
 using PDR.PatientBooking.Service.ClinicServices.Validation;
 using PDR.PatientBooking.Service.DoctorServices;
@@ -12,14 +14,15 @@ namespace PDR.PatientBooking.Service.IoC
     {
         public static void RegisterPatientBookingServices(this IServiceCollection collection)
         {
-            collection.AddScoped<IPatientService, PatientService>();
-            collection.AddScoped<IAddPatientRequestValidator, AddPatientRequestValidator>();
-
-            collection.AddScoped<IDoctorService, DoctorService>();
-            collection.AddScoped<IAddDoctorRequestValidator, AddDoctorRequestValidator>();
-
-            collection.AddScoped<IClinicService, ClinicService>();
-            collection.AddScoped<IAddClinicRequestValidator, AddClinicRequestValidator>();
+            collection
+                .AddScoped<IPatientService, PatientService>()
+                .AddScoped<IAddPatientRequestValidator, AddPatientRequestValidator>()
+                .AddScoped<IDoctorService, DoctorService>()
+                .AddScoped<IAddDoctorRequestValidator, AddDoctorRequestValidator>()
+                .AddScoped<IClinicService, ClinicService>()
+                .AddScoped<IAddClinicRequestValidator, AddClinicRequestValidator>()
+                .AddScoped<IBookingService, BookingService.BookingService>()
+                .AddScoped<IAddBookingRequestValidator, AddBookingRequestValidator>();
         }
     }
 }

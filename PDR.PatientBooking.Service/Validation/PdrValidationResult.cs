@@ -18,11 +18,6 @@ namespace PDR.PatientBooking.Service.Validation
             PassedValidation = passedValidation;
             Errors = new List<string> { error };
         }
-
-        public PdrValidationResult(bool passedValidation, List<string> errors)
-        {
-            PassedValidation = passedValidation;
-            Errors = errors;
-        }
+        
     }
 }
