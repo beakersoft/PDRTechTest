@@ -21,7 +21,7 @@ namespace PDR.PatientBooking.Service.BookingService
             _validator = validator;
         }
 
-        public async Task<bool> AddBookingAsync(BookingRequest request)
+        public async Task AddBookingAsync(BookingRequest request)
         {
             var validationResult = _validator.ValidateRequest(request);
 
@@ -33,8 +33,34 @@ namespace PDR.PatientBooking.Service.BookingService
             var order = request.ToNewOrder(patient, doctor);
             await _context.Order.AddRangeAsync(new List<Order> { order });
             await _context.SaveChangesAsync();
+        }
 
-            return true;
+        public async Task CancelBookingAsync(Guid bookingId)
+        {
+            var validationResult = _validator.ValidateRequestCancelBooking(bookingId);
+
+            if (!validationResult.PassedValidation)
+                throw new ArgumentException(validationResult.Errors.Join(", "));
+
+            var booking = await _context.Order.FindAsync(bookingId);
+            booking.CancelBooking();
+            _context.Update(booking);
+            await _context.SaveChangesAsync();
+        }
+
+        public Order GetPatientNextAppointment(long identificationNumber)
+        {
+            var bookings = _context.Order
+                .Where(x => x.Patient.Id == identificationNumber
+                    && x.CanceledTimeUtc == null
+                    && x.StartTime > DateTime.Now)
+                .OrderByDescending(x => x.StartTime)
+                .ToList();
+
+            if (!bookings.Any())
+                return null;
+            
+            return bookings.First();
         }
     }
 }

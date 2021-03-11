@@ -29,6 +29,42 @@ namespace PDR.PatientBooking.Service.BookingService.Validation
             return _validationResult;
         }
 
+        public PdrValidationResult ValidateRequestCancelBooking(Guid bookingId)
+        {
+            _validationResult = new PdrValidationResult(true);
+
+            CheckBookingCanBeCanceled(bookingId);
+            
+            return _validationResult;
+        }
+
+        public void CheckBookingCanBeCanceled(Guid bookingId)
+        {
+            var booking = _context.Order.Find(bookingId);
+
+            if (booking == null)
+            {
+                _validationResult.PassedValidation = false;
+                _validationResult.Errors.Add($"Booking on id {bookingId} not found");
+                return;
+            }
+
+            //if we are operating across times zones i think we need to hold the booking times at UTC or or as offsets
+            if (booking.StartTime < DateTime.Now)
+            {
+                _validationResult.PassedValidation = false;
+                _validationResult.Errors.Add($"Booking is in the past and so cannot be canceled");
+            }
+
+            if (booking.CanceledTimeUtc != null)
+            {
+                _validationResult.PassedValidation = false;
+                _validationResult.Errors.Add($"Booking has already been canceld");
+            }
+
+            //LPN also int the real world if we has some auth then check the person has access to cancel the booking
+        }
+
         private void CheckRequestedDatesAreValid(BookingRequest request)
         {
             if (request.EndTime < request.StartTime)
@@ -70,5 +106,7 @@ namespace PDR.PatientBooking.Service.BookingService.Validation
             _validationResult.PassedValidation = false;
             _validationResult.Errors.Add($"No Patient record found for id {request.PatientId}");
         }
+
+        
     }
 }

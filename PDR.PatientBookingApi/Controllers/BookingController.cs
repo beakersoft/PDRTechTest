@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PDR.PatientBooking.Data;
-using PDR.PatientBooking.Data.Models;
 using PDR.PatientBooking.Service.BookingService;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -15,45 +13,31 @@ namespace PDR.PatientBookingApi.Controllers
     [ApiController]
     public class BookingController : ControllerBase
     {
-        private readonly PatientBookingContext _context;
         private readonly IBookingService _bookingService;
-
 
         public BookingController(PatientBookingContext context, IBookingService bookingService)
         {
-            _context = context;
             _bookingService = bookingService;
         }
 
         [HttpGet("patient/{identificationNumber}/next")]
-        public IActionResult GetPatientNextAppointnemtn(long identificationNumber)
+        public IActionResult GetPatientNextAppointment(long identificationNumber)
         {
-            //TODO LPN This will need moving into the service as well
-            var bockings = _context.Order.OrderBy(x => x.StartTime).ToList();
+            if (!ModelState.IsValid || identificationNumber <=0)
+                return BadRequest($"Please pass a valid booking id");
 
-            if (bockings.Where(x => x.Patient.Id == identificationNumber).Count() == 0)
+            var booking = _bookingService.GetPatientNextAppointment(identificationNumber);
+
+            if (booking == null)
+                return NotFound("No bookings where found");
+
+            return Ok(new
             {
-                return StatusCode(502);
-            }
-            else
-            {
-                var bookings2 = bockings.Where(x => x.PatientId == identificationNumber);
-                if (bookings2.Where(x => x.StartTime > DateTime.Now).Count() == 0)
-                {
-                    return StatusCode(502);
-                }
-                else
-                {
-                    var bookings3 = bookings2.Where(x => x.StartTime > DateTime.Now);
-                    return Ok(new
-                    {
-                        bookings3.First().Id,
-                        bookings3.First().DoctorId,
-                        bookings3.First().StartTime,
-                        bookings3.First().EndTime
-                    });
-                }
-            }
+                booking.Id,
+                booking.DoctorId,
+                booking.StartTime,
+                booking.EndTime
+            });
         }
 
         [HttpPost()]
@@ -77,31 +61,27 @@ namespace PDR.PatientBookingApi.Controllers
             }
         }
 
-
-        private static MyOrderResult UpdateLatestBooking(List<Order> bookings2, int i)
+        [HttpPut("patient/Cancel/{bookingId}")]
+        public async Task<IActionResult> CancelBooking(Guid bookingId)
         {
-            MyOrderResult latestBooking;
-            latestBooking = new MyOrderResult();
-            latestBooking.Id = bookings2[i].Id;
-            latestBooking.DoctorId = bookings2[i].DoctorId;
-            latestBooking.StartTime = bookings2[i].StartTime;
-            latestBooking.EndTime = bookings2[i].EndTime;
-            latestBooking.PatientId = bookings2[i].PatientId;
-            latestBooking.SurgeryType = (int)bookings2[i].GetSurgeryType();
+            if (!ModelState.IsValid)
+                return BadRequest($"Please pass a valid booking id");
 
-            return latestBooking;
+            try
+            {
+                await _bookingService.CancelBookingAsync(bookingId);
+                return Ok("Booking Canceled");
+            }
+            catch (ArgumentException argumentEx)
+            {
+                return BadRequest(argumentEx.Message);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, "Sorry, an internal error occurred");
+            }
         }
-
-        private class MyOrderResult
-        {
-            public Guid Id { get; set; }
-            public DateTime StartTime { get; set; }
-            public DateTime EndTime { get; set; }
-            public long PatientId { get; set; }
-            public long DoctorId { get; set; }
-            public int SurgeryType { get; set; }
-        }
-
+        
         [NonAction]
         public string GetModelStateMessages()
         {
